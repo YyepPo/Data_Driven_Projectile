@@ -2,21 +2,25 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "NiagaraComponent.h"  // For visuals
+#include "NiagaraComponent.h"
 #include "ProjectileData.generated.h"
 
 USTRUCT(BlueprintType)
 struct FProjectileData
 {
 	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		FVector Location;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		float Speed;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		TObjectPtr<UNiagaraComponent> VisualComponent;
+		TObjectPtr<UNiagaraSystem> ProjectileVFX;
+	// Mass in kg
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		float Mass = 1.f;
 
-	float ZVelocity;
+	FVector Location;
 	FVector Direction;
+	float ZVelocity;
+	UPROPERTY()
+		TObjectPtr<UNiagaraComponent> VFXComponent;
 };
