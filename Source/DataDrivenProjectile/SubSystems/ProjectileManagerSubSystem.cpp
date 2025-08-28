@@ -28,7 +28,7 @@ void UProjectileManagerSubSystem::Tick(float DeltaTime)
 		// Apply gravity to Z-velocity
 		Bullet.ZVelocity += Gravity * DeltaTime;
 
-		// Calculate new location & add bullet drop
+		// Calculate new location & add bullet drop overtime
 		const FVector StartLocation = Bullet.Location;
 		const FVector ProjectileVelocity = Bullet.Direction * Bullet.Speed;
 		const FVector NewLocation = StartLocation + (ProjectileVelocity + FVector(0, 0, Bullet.ZVelocity * Bullet.Mass)) * DeltaTime;
@@ -41,14 +41,14 @@ void UProjectileManagerSubSystem::Tick(float DeltaTime)
 			ECC_Visibility);
 
 		if (bHasHit)
-		{
-			// Deal damage
-			//if (AActor* HitActor = HitResult.GetActor())
-			//{
-			//	UE_LOG(LogTemp, Log, TEXT("Bullet hit actor: %s"), *HitActor->GetName());
-			//}
+		{			
+			if (AActor* HitActor = HitResult.GetActor())
+			{
+				// Deal damage
+				// Add impulse etc.
+			}
 
-			// Destroy Niagara component. Optionally spawn impact vfx
+			// Destroy Trail Niagara component.
 			if (Bullet.VFXComponent)
 			{
 				Bullet.VFXComponent->DestroyComponent();
