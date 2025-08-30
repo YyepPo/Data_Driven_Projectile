@@ -5,9 +5,9 @@
 
 #include "NiagaraFunctionLibrary.h"
 
-UProjectileManagerSubSystem::UProjectileManagerSubSystem()
+UProjectileManagerSubSystem::UProjectileManagerSubSystem()//(FSubsystemCollectionBase& Collection)
 {
-	
+
 }
 
 TStatId UProjectileManagerSubSystem::GetStatId() const
@@ -31,8 +31,9 @@ void UProjectileManagerSubSystem::Tick(float DeltaTime)
 		// Calculate new location & add bullet drop overtime
 		const FVector StartLocation = Bullet.Location;
 		const FVector ProjectileVelocity = Bullet.Direction * Bullet.Speed;
-		const FVector NewLocation = StartLocation + (ProjectileVelocity + FVector(0, 0, Bullet.ZVelocity * Bullet.Mass)) * DeltaTime;
-
+		const FVector CombinedVelocity = ProjectileVelocity + FVector(0, 0, Bullet.ZVelocity * Bullet.Mass);
+		const FVector NewLocation = StartLocation + CombinedVelocity * DeltaTime;
+				
 		// Line trace to detect hit, if hit destroy projectile, otherwise keep updating movement
 		FHitResult HitResult;
 		const bool bHasHit = GetWorld()->LineTraceSingleByChannel(HitResult,
@@ -60,30 +61,30 @@ void UProjectileManagerSubSystem::Tick(float DeltaTime)
 		{
 			// Update location
 			Bullet.Location = NewLocation;
-
+			
 			if (Bullet.VFXComponent)
 			{
 				Bullet.VFXComponent->SetWorldLocation(NewLocation);
 				// Rotation follows velocity
-				FVector CombinedVelocity = ProjectileVelocity + FVector(0, 0, Bullet.ZVelocity);
-				Bullet.VFXComponent->SetWorldRotation(CombinedVelocity.Rotation());
+				FVector NewCombinedNewVelocity = ProjectileVelocity + FVector(0, 0, Bullet.ZVelocity);
+				Bullet.VFXComponent->SetWorldRotation(NewCombinedNewVelocity.Rotation());
 			}
 
 			//DrawDebugLine(GetWorld(), StartLocation, NewLocation, FColor::Red, true, 5.f);
 		}
 	}
-
+	
 	// Remove projectiles that has been destroyed
 	if (ToRemove.IsEmpty() == false)
 	{
-		ToRemove.Sort();
+		ToRemove.Sort(TGreater<int32>());
 
-		for (int32 i = 0; i < ToRemove.Num(); ++i)
+		for (int32 Index : ToRemove)
 		{
-			if (Projectiles.IsValidIndex(i))
+			if (Projectiles.IsValidIndex(Index))
 			{
 				// RemoveAtSwap is much more efficient than RemoveAt (O(Count) instead of O(ArrayNum)), but does not preserve the order.
-				Projectiles.RemoveAtSwap(i,EAllowShrinking::No);
+				Projectiles.RemoveAtSwap(Index, EAllowShrinking::No);
 			}
 		}
 	}
