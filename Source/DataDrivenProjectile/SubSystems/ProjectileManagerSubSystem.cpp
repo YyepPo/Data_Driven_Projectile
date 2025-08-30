@@ -1,14 +1,7 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
-
-
-#include "ProjectileManagerSubSystem.h"
-
-#include "NiagaraFunctionLibrary.h"
-
-UProjectileManagerSubSystem::UProjectileManagerSubSystem()//(FSubsystemCollectionBase& Collection)
-{
-
-}
+﻿#include "ProjectileManagerSubSystem.h"
+#include "InstanceStaticMeshActor.h"
+#include "Components/InstancedStaticMeshComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 TStatId UProjectileManagerSubSystem::GetStatId() const
 {
@@ -19,7 +12,27 @@ void UProjectileManagerSubSystem::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (IsValid(InstancedStaticMeshComponent) == false)
+	{
+		AInstanceStaticMeshActor* Actor = Cast<AInstanceStaticMeshActor>(UGameplayStatics::GetActorOfClass(GetWorld(),AInstanceStaticMeshActor::StaticClass()));
+		if (Actor != nullptr)
+		{
+			InstancedStaticMeshComponent = Actor->InstancedStaticMeshComponent;
+			GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Red,FString::Printf(TEXT("AInstanceStaticMeshActor is valid")));
+		}
+		else
+		{
+			GEngine->AddOnScreenDebugMessage(-1,
+				5.f,
+				FColor::Red,
+				TEXT("Invalid AInstanceStaticMeshActor! Please create an AInstanceStaticMeshActor and assign a Static Mesh to its InstancedStaticMeshComponent."));
+		}
+	}
+
 	TArray<int32> ToRemove;
+
+	TArray<FTransform> ProjectileTransforms;
+	ProjectileTransforms.Reserve(Projectiles.Num());
 
 	for (int32 i = 0; i < Projectiles.Num(); ++i)
 	{
@@ -33,7 +46,7 @@ void UProjectileManagerSubSystem::Tick(float DeltaTime)
 		const FVector ProjectileVelocity = Bullet.Direction * Bullet.Speed;
 		const FVector CombinedVelocity = ProjectileVelocity + FVector(0, 0, Bullet.ZVelocity * Bullet.Mass);
 		const FVector NewLocation = StartLocation + CombinedVelocity * DeltaTime;
-				
+		Bullet.Location = NewLocation;
 		// Line trace to detect hit, if hit destroy projectile, otherwise keep updating movement
 		FHitResult HitResult;
 		const bool bHasHit = GetWorld()->LineTraceSingleByChannel(HitResult,
@@ -49,36 +62,36 @@ void UProjectileManagerSubSystem::Tick(float DeltaTime)
 				// Add impulse etc.
 			}
 
-			// Destroy Trail Niagara component.
-			if (Bullet.VFXComponent)
-			{
-				Bullet.VFXComponent->DestroyComponent();
-			}
-
 			ToRemove.Add(i);
 		}
 		else
 		{
 			// Update location
 			Bullet.Location = NewLocation;
-			
-			if (Bullet.VFXComponent)
-			{
-				Bullet.VFXComponent->SetWorldLocation(NewLocation);
-				// Rotation follows velocity
-				FVector NewCombinedNewVelocity = ProjectileVelocity + FVector(0, 0, Bullet.ZVelocity);
-				Bullet.VFXComponent->SetWorldRotation(NewCombinedNewVelocity.Rotation());
-			}
-
+			const FRotator BulletOrientation = (ProjectileVelocity + FVector(0, 0, Bullet.ZVelocity)).Rotation();
+			const FTransform NewTransform = FTransform(BulletOrientation,Bullet.Location,FVector(1));
+			ProjectileTransforms.Add(NewTransform);
+	
 			//DrawDebugLine(GetWorld(), StartLocation, NewLocation, FColor::Red, true, 5.f);
 		}
+	}
+
+	InstancedStaticMeshComponent->ClearInstances();
+	
+	if (ProjectileTransforms.IsEmpty() == false)
+	{
+		for (const FTransform& ProjectileTransform : ProjectileTransforms)
+		{
+			InstancedStaticMeshComponent->AddInstance(ProjectileTransform);
+		}
+		//DrawDebugSphere(GetWorld(),ProjectileTransforms[0].GetLocation(),10,10,FColor::Red);
 	}
 	
 	// Remove projectiles that has been destroyed
 	if (ToRemove.IsEmpty() == false)
 	{
 		ToRemove.Sort(TGreater<int32>());
-
+	
 		for (int32 Index : ToRemove)
 		{
 			if (Projectiles.IsValidIndex(Index))
@@ -91,14 +104,8 @@ void UProjectileManagerSubSystem::Tick(float DeltaTime)
 }
 
 void UProjectileManagerSubSystem::SpawnProjectile(const FVector& Location, const FVector& Direction,
-	const FProjectileData& NewProjectileData)
+                                                  const FProjectileData& NewProjectileData)
 {
-	if(NewProjectileData.ProjectileVFX == nullptr)
-	{
-		GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Red,FString::Printf(TEXT("Projectile Manager: Niagara System is not select. Pls Select one")));
-		return;
-	}
-
 	if(FMath::IsNearlyZero(NewProjectileData.Speed))
 	{
 		GEngine->AddOnScreenDebugMessage(-1,5.f,FColor::Red,FString::Printf(TEXT("Projectile Manager: Projectiles bullet speed is 0")));
@@ -107,14 +114,6 @@ void UProjectileManagerSubSystem::SpawnProjectile(const FVector& Location, const
 	FProjectileData ProjectileData = NewProjectileData;
 	ProjectileData.Location = Location;
 	ProjectileData.Direction = Direction;	
-		
-	ProjectileData.VFXComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, ProjectileData.ProjectileVFX,
-		ProjectileData.Location,
-		FRotator::ZeroRotator,
-		FVector(1),
-		true,
-		true,
-		ENCPoolMethod::AutoRelease);
 	
 	Projectiles.Emplace(ProjectileData);
 }

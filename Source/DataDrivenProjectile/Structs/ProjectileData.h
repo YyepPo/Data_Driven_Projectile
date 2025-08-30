@@ -12,8 +12,6 @@ struct FProjectileData
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		float Speed;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		TObjectPtr<UNiagaraSystem> ProjectileVFX;
 	// Mass in kg
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		float Mass = 1.f;
@@ -21,6 +19,4 @@ struct FProjectileData
 	FVector Location;
 	FVector Direction;
 	float ZVelocity;
-	UPROPERTY()
-		TObjectPtr<UNiagaraComponent> VFXComponent;
 };

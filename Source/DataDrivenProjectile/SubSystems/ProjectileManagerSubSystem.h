@@ -11,14 +11,12 @@ class DATADRIVENPROJECTILE_API UProjectileManagerSubSystem : public UTickableWor
 	GENERATED_BODY()
 
 public:
-
-	UProjectileManagerSubSystem();
-
+	
 	// Required function from FTickableGameObject. If not implemented a crash will occur
 	virtual TStatId GetStatId() const override;
 	
 	virtual void Tick(float DeltaTime) override;
-
+		
 	UFUNCTION(BlueprintCallable)
 		void SpawnProjectile(const FVector& Location,
 			const FVector& Direction,
@@ -33,6 +31,9 @@ private:
 
 	// Projectiles that are spawned
 	TArray<FProjectileData> Projectiles;
+
+	UPROPERTY()
+		TObjectPtr<UInstancedStaticMeshComponent> InstancedStaticMeshComponent;
 	
 	const float Gravity = -970.f;
 };
