@@ -53,6 +53,8 @@ void UProjectileManagerSubSystem::Tick(float DeltaTime)
 			{
 				Bullet.VFXComponent->DestroyComponent();
 			}
+
+			ToRemove.Add(i);
 		}
 		else
 		{
@@ -68,6 +70,21 @@ void UProjectileManagerSubSystem::Tick(float DeltaTime)
 			}
 
 			//DrawDebugLine(GetWorld(), StartLocation, NewLocation, FColor::Red, true, 5.f);
+		}
+	}
+
+	// Remove projectiles that has been destroyed
+	if (ToRemove.IsEmpty() == false)
+	{
+		ToRemove.Sort();
+
+		for (int32 i = 0; i < ToRemove.Num(); ++i)
+		{
+			if (Projectiles.IsValidIndex(i))
+			{
+				// RemoveAtSwap is much more efficient than RemoveAt (O(Count) instead of O(ArrayNum)), but does not preserve the order.
+				Projectiles.RemoveAtSwap(i,EAllowShrinking::No);
+			}
 		}
 	}
 }
