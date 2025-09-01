@@ -10,3 +10,9 @@ A lightweight, high-performance projectile system for Unreal Engine 5, using a d
 # Projectile Spawner (created in blueprints)
 - Projectile spawner with selectable actor-based or data-driven spawning to compare FPS performance.
 - Adjustable fire rate for projectile spawner
+
+# Update 1.1
+- Removing projectiles from array on impact
+
+# Update 1.2
+- Replaced Niagara system with Instance Static Mesh Components(ISM) for projectile representation.
